@@ -2,11 +2,12 @@ import {parallelLimit} from 'async';
 import chalk from 'chalk';
 import 'dotenv/config';
 import {reduce} from 'lodash';
+import cron from 'node-cron';
 import {User} from 'twitter-api-client/dist/interfaces/types/FollowersListTypes';
-import {checkFollowers} from './lib/checkFollowers';
-import {typedTwitterClient} from './lib/client';
-import {renderScene} from './lib/renderScene';
-import {uploadMediaToTwitter} from './lib/uploadMediaToTwitter';
+import {checkFollowers} from './src/lib/checkFollowers';
+import {typedTwitterClient} from './src/lib/client';
+import {renderScene} from './src/lib/renderScene';
+import {uploadMediaToTwitter} from './src/lib/uploadMediaToTwitter';
 
 const tweet = async (follower: User) => {
 	console.time(follower.screen_name);
@@ -88,6 +89,6 @@ const test = async () => {
 };
 
 // Runs every minute
-// cron.schedule('* * * * *', () => {
-test();
-// });
+cron.schedule('* * * * *', () => {
+	test();
+});

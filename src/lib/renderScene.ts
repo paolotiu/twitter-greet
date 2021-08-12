@@ -1,9 +1,5 @@
 import {bundle} from '@remotion/bundler';
-import {
-	getCompositions,
-	renderFrames,
-	stitchFramesToVideo,
-} from '@remotion/renderer';
+import {getCompositions, renderFrames, stitchFramesToVideo} from '@remotion/renderer';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -12,7 +8,7 @@ interface RenderSceneOptions {
 	compositionId: string;
 	onError?: () => void;
 	onFrameUpdate?: (f: number) => void;
-	props: Record<string, any>;
+	props: Record<string, unknown>;
 }
 export const renderScene = async ({
 	compositionId,
