@@ -16,7 +16,7 @@ export const renderScene = async ({
 	onFrameUpdate,
 	props,
 }: RenderSceneOptions) => {
-	const bundled = await bundle(path.join(__dirname, '../', 'src/index.tsx'));
+	const bundled = await bundle(path.join(__dirname, '../', 'index.tsx'));
 
 	const comps = await getCompositions(bundled);
 
