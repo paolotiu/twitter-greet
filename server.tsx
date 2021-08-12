@@ -63,7 +63,7 @@ const tweet = async (follower: User) => {
 	const mediaId = await uploadMediaToTwitter(path);
 
 	await typedTwitterClient.tweets.statusesUpdate({
-		status: `Hey ${follower.screen_name}, thanks for following @PaoloTiu_. \n\nHere's a cool video, hope you like it!`,
+		status: `Hey @${follower.screen_name}, thanks for following @PaoloTiu_. \n\nHere's a cool video, hope you like it!`,
 		media_ids: mediaId,
 	});
 
