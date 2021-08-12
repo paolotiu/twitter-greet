@@ -22,7 +22,7 @@ interface Props {
 		tweets: number;
 		likes: number;
 		retweets: number;
-		replies: number;
+		letters: number;
 	};
 }
 const TwitterScene = ({name, stats}: Props) => {

@@ -15,9 +15,9 @@ export const RemotionVideo: React.FC = () => {
 					name: 'Paolo Tiu',
 					stats: {
 						likes: 100,
-						replies: 100,
 						retweets: 100,
 						tweets: 100,
+						letters: 12039,
 					},
 				}}
 			/>

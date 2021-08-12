@@ -14,12 +14,12 @@ interface Props {
 	tweets: number;
 	likes: number;
 	retweets: number;
-	replies: number;
+	letters: number;
 }
 
 const INITIAL_DELAY = 30;
 
-const Stats = ({likes, replies, retweets, tweets}: Props) => {
+const Stats = ({likes, letters, retweets, tweets}: Props) => {
 	return (
 		<Container style={{backgroundColor: '#1DA1F2'}}>
 			<Sequence durationInFrames={100} from={0}>
@@ -64,12 +64,12 @@ const Stats = ({likes, replies, retweets, tweets}: Props) => {
 						<p>
 							Your past{' '}
 							<span style={{fontWeight: 600, fontSize: '.8em'}}>{tweets}</span>{' '}
-							tweets got
+							tweets has
 						</p>
 					</AppearThenLeft>
 					<Stat value={likes} label="likes" delay={INITIAL_DELAY} />
 					<Stat value={retweets} label="retweets" delay={INITIAL_DELAY + 50} />
-					<Stat value={replies} label="replies" delay={INITIAL_DELAY + 100} />
+					<Stat value={letters} label="letters" delay={INITIAL_DELAY + 100} />
 				</div>
 			</Sequence>
 			<Sequence durationInFrames={Infinity} from={340}>
