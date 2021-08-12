@@ -22,6 +22,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
 COPY package*.json ./
 COPY tsconfig.json ./
 COPY src src
+COPY prisma prisma
 COPY *.ts .
 COPY *.tsx .
 
