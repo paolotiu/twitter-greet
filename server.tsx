@@ -1,13 +1,14 @@
-import {parallelLimit} from 'async';
-import chalk from 'chalk';
 import 'dotenv/config';
 import {reduce} from 'lodash';
 import cron from 'node-cron';
+import queue from 'queue';
 import {User} from 'twitter-api-client/dist/interfaces/types/FollowersListTypes';
 import {checkFollowers} from './src/lib/checkFollowers';
 import {typedTwitterClient} from './src/lib/client';
 import {renderScene} from './src/lib/renderScene';
 import {uploadMediaToTwitter} from './src/lib/uploadMediaToTwitter';
+
+const q = queue({results: [], concurrency: 2, autostart: true});
 
 const tweet = async (follower: User) => {
 	console.time(follower.screen_name);
@@ -68,24 +69,18 @@ const tweet = async (follower: User) => {
 	});
 
 	console.timeEnd(follower.screen_name);
+	return follower.screen_name;
 };
 const test = async () => {
+	console.log('Started cycle');
 	const followers = await checkFollowers();
 
 	if (!followers) return;
 
 	// Render at most five videos at once
-	parallelLimit(
-		followers.map((follower) => {
-			return () => tweet(follower);
-		}),
-		5,
-		(err) => {
-			if (err) console.error(err);
-
-			console.log(chalk.blue.bgBlack(' -> Cycle Done! <-'));
-		}
-	);
+	followers.forEach((follower) => {
+		q.push(() => tweet(follower));
+	});
 };
 
 // Runs every minute
