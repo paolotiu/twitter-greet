@@ -1,99 +1,93 @@
-/**
- * This is an example of a server that returns dynamic video.
- * Run `npm run server` to try it out!
- * If you don't want to render videos on a server, you can safely
- * delete this file.
- */
+import {parallelLimit} from 'async';
+import chalk from 'chalk';
+import 'dotenv/config';
+import {reduce} from 'lodash';
+import {User} from 'twitter-api-client/dist/interfaces/types/FollowersListTypes';
+import {checkFollowers} from './lib/checkFollowers';
+import {typedTwitterClient} from './lib/client';
+import {renderScene} from './lib/renderScene';
+import {uploadMediaToTwitter} from './lib/uploadMediaToTwitter';
 
-import {bundle} from '@remotion/bundler';
-import {
-	getCompositions,
-	renderFrames,
-	stitchFramesToVideo,
-} from '@remotion/renderer';
-import express from 'express';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+const tweet = async (follower: User) => {
+	console.time(follower.screen_name);
+	const tweets = await typedTwitterClient.tweets.statusesUserTimeline({
+		count: 200,
+		include_rts: false,
+		exclude_replies: false,
+		screen_name: follower.screen_name,
+	});
 
-const app = express();
-const port = process.env.PORT || 8000;
-const compositionId = 'HelloWorld';
-
-const cache = new Map<string, string>();
-
-app.get('/', async (req, res) => {
-	const sendFile = (file: string) => {
-		fs.createReadStream(file)
-			.pipe(res)
-			.on('close', () => {
-				res.end();
-			});
+	type InitialValue = {
+		likes: number;
+		retweets: number;
+		letters: number;
 	};
-	try {
-		if (cache.get(JSON.stringify(req.query))) {
-			sendFile(cache.get(JSON.stringify(req.query)) as string);
-			return;
-		}
-		const bundled = await bundle(path.join(__dirname, './src/index.tsx'));
-		const comps = await getCompositions(bundled, {inputProps: req.query});
-		const video = comps.find((c) => c.id === compositionId);
-		if (!video) {
-			throw new Error(`No video called ${compositionId}`);
-		}
-		res.set('content-type', 'video/mp4');
+	const initialValue: InitialValue = {
+		likes: 0,
+		retweets: 0,
+		letters: 0,
+	};
 
-		const tmpDir = await fs.promises.mkdtemp(
-			path.join(os.tmpdir(), 'remotion-')
-		);
-		const {assetsInfo} = await renderFrames({
-			config: video,
-			webpackBundle: bundled,
-			onStart: () => console.log('Rendering frames...'),
-			onFrameUpdate: (f) => {
-				if (f % 10 === 0) {
-					console.log(`Rendered frame ${f}`);
-				}
+	const stats = reduce(
+		tweets,
+		(acc, curr) => {
+			return {
+				likes: acc.likes + curr.favorite_count,
+				retweets: acc.retweets + curr.retweet_count,
+				letters: acc.letters + curr.text.length,
+			};
+		},
+		initialValue
+	);
+
+	const path = await renderScene({
+		compositionId: 'Twitter',
+		props: {
+			name: follower.screen_name,
+			stats: {
+				...stats,
+				tweets: tweets.length,
 			},
-			parallelism: null,
-			outputDir: tmpDir,
-			inputProps: req.query,
-			compositionId,
-			imageFormat: 'jpeg',
-		});
+		},
+		onFrameUpdate: (f) => {
+			if (f % 50 === 0) {
+				console.log('frame ', f);
+			}
+		},
+	});
 
-		const finalOutput = path.join(tmpDir, 'out.mp4');
-		await stitchFramesToVideo({
-			dir: tmpDir,
-			force: true,
-			fps: video.fps,
-			height: video.height,
-			width: video.width,
-			outputLocation: finalOutput,
-			imageFormat: 'jpeg',
-			assetsInfo,
-		});
-		cache.set(JSON.stringify(req.query), finalOutput);
-		sendFile(finalOutput);
-		console.log('Video rendered and sent!');
-	} catch (err) {
-		console.error(err);
-		res.json({
-			error: err,
-		});
+	if (!path) {
+		return;
 	}
-});
+	const mediaId = await uploadMediaToTwitter(path);
 
-app.listen(port);
+	await typedTwitterClient.tweets.statusesUpdate({
+		status: `Hey ${follower.screen_name}, thanks for following @PaoloTiu_. \n\nHere's a cool video, hope you like it!`,
+		media_ids: mediaId,
+	});
 
-console.log(
-	[
-		`The server has started on http://localhost:${port}!`,
-		'You can render a video by passing props as URL parameters.',
-		'',
-		'If you are running Hello World, try this:',
-		'',
-		`http://localhost:${port}?titleText=Hello,+World!&titleColor=red`,
-		'',
-	].join('\n')
-);
+	console.timeEnd(follower.screen_name);
+};
+const test = async () => {
+	const followers = await checkFollowers();
+
+	if (!followers) return;
+
+	// Render at most five videos at once
+	parallelLimit(
+		followers.map((follower) => {
+			return () => tweet(follower);
+		}),
+		5,
+		(err) => {
+			if (err) console.error(err);
+
+			console.log(chalk.blue.bgBlack(' -> Cycle Done! <-'));
+		}
+	);
+};
+
+// Runs every minute
+// cron.schedule('* * * * *', () => {
+test();
+// });
